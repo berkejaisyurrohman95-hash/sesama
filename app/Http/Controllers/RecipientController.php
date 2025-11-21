@@ -38,12 +38,13 @@ class RecipientController extends Controller
             'Ibu_name' => 'required|string|max:255',
             'birth_place' => 'required|string|max:255',
             'birth_date' => 'required|date',
-            'school_level' => 'required|string|max:255',
-            'school_name' => 'required|string|max:255',
+            'no_tlp' => 'required|string|max:15',
+            'khitan' => 'required|string|max:255',
             'address' => 'required|string',
-            'class' => 'required|string|max:255',
-            'shoe_size' => 'required|string|max:10',
-            'shirt_size' => 'required|string|max:10',
+            'wilayah' => 'required|string',
+            'uang_bingkisan' => 'required|string|max:255',
+            'fothobooth' => 'required|string|max:10',
+            'reference' => 'required|string|max:10',
         ]);
 
         // Generate unique QR code
@@ -76,15 +77,15 @@ class RecipientController extends Controller
             'Ibu_name' => 'required|string|max:255',
             'birth_place' => 'required|string|max:255',
             'birth_date' => 'required|date',
-            'school_level' => 'required|string|max:255',
-            'school_name' => 'required|string|max:255',
+            'reference' => 'required|string|max:255',
+            'no_tlp' => 'required|string|max:255',
             'address' => 'required|string',
-            'class' => 'required|string|max:255',
-            'shoe_size' => 'required|string|max:50',
-            'shirt_size' => 'required|string|max:50',
-            'uniform_received' => 'nullable|boolean',
-            'shoes_received' => 'nullable|boolean',
-            'bag_received' => 'nullable|boolean',
+            'khitan' => 'required|string|max:255',
+            'uang_bingkisan' => 'required|string|max:50',
+            'fothobooth' => 'required|string|max:50',
+            'khitan_received' => 'nullable|boolean',
+            'uang_bingkisan_received' => 'nullable|boolean',
+            'fothobooth_received' => 'nullable|boolean',
             'is_distributed' => 'nullable|boolean',
             'distributed_at' => 'nullable|date',
         ]);
@@ -154,8 +155,16 @@ class RecipientController extends Controller
             'Nama'    => $recipient->child_name,
             'Ayah'    => $recipient->Ayah_name,
             'Ibu'     => $recipient->Ibu_name,
-            'Sekolah' => $recipient->school_name,
-            'Kelas'   => $recipient->class,
+            'address' => $recipient->address,
+            'birth_place' => $recipient->birth_place,
+            'birth_date' => $recipient->birth_date,
+            'reference'   => $recipient->reference,
+            'no_tlp'   => $recipient->no_tlp,
+            'khitan_received' => $recipient->khitan_received,
+            'uang_bingkisan_received' => $recipient->uang_bingkisan_received,
+            'fothobooth_received' => $recipient->fothobooth_received,
+            'distributed_at' => $recipient->distributed_at,
+
         ];
         $y = 250;
         foreach ($info as $label => $value) {
@@ -237,8 +246,15 @@ class RecipientController extends Controller
                     'Nama'    => $recipient->child_name,
                     'Ayah'    => $recipient->Ayah_name,
                     'Ibu'     => $recipient->Ibu_name,
-                    'Sekolah' => $recipient->school_name,
-                    'Kelas'   => $recipient->class,
+                    'address' => $recipient->address,
+                    'birth_place' => $recipient->birth_place,
+                    'birth_date' => $recipient->birth_date,
+                    'reference'   => $recipient->reference,
+                    'no_tlp'   => $recipient->no_tlp,
+                    'khitan_received' => $recipient->khitan_received,
+                    'uang_bingkisan_received' => $recipient->uang_bingkisan_received,
+                    'fothobooth_received' => $recipient->fothobooth_received,
+                    'distributed_at' => $recipient->distributed_at,
                 ];
                 $y = 250;
                 foreach ($info as $label => $value) {
@@ -296,15 +312,23 @@ class RecipientController extends Controller
                 return response()->json(['error' => 'QR Code tidak ditemukan'], 404);
             }
 
-            // Tambahkan pengecekan: harus sudah registrasi
+            // BELUM REGISTRASI
             if (!$recipient->registrasi) {
-                return response()->json(['error' => 'Penerima belum registrasi'], 403);
+                return response()->json([
+                    'error' => 'Penerima belum registrasi'
+                ], 403);
+            }
+
+            // SUDAH PERNAH DISTRIBUSI
+            if ($recipient->is_distributed) {
+                return response()->json([
+                    'error' => 'Penerima sudah menerima bantuan (tidak boleh ambil dua kali)'
+                ], 403);
             }
 
             return response()->json([
                 'success' => true,
-                'recipient' => $recipient,
-                'status' => $recipient->distribution_status
+                'recipient' => $recipient
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'QR Code tidak valid: ' . $e->getMessage()], 400);
@@ -317,6 +341,20 @@ class RecipientController extends Controller
 
     public function distribute(Request $request, Recipient $recipient)
     {
+        if (!$recipient->registrasi) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Penerima belum registrasi'
+            ], 403);
+        }
+
+        if ($recipient->is_distributed) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Penerima sudah menerima bantuan'
+            ], 403);
+        }
+
         try {
             $recipient->update([
                 'is_distributed' => true,
@@ -326,17 +364,15 @@ class RecipientController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Status penyaluran berhasil diperbarui',
-                'is_fully_distributed' => true,
                 'recipient_id' => $recipient->id
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat memperbarui data: ' . $e->getMessage()
+                'message' => 'Gagal memperbarui data: ' . $e->getMessage()
             ], 500);
         }
     }
-
 
 
     public function generateReceipt(Recipient $recipient)
@@ -443,11 +479,10 @@ class RecipientController extends Controller
                 return response()->json(['error' => 'QR Code tidak ditemukan'], 404);
             }
 
-            if ($recipient->registered) {
-                return response()->json(['error' => 'Penerima ini sudah terdaftar sebelumnya'], 400);
+            if ($recipient->registrasi) {
+                return response()->json(['error' => 'Penerima sudah registrasi'], 400);
             }
 
-            // Update status registrasi
             $recipient->registrasi = true;
             $recipient->save();
 
@@ -457,7 +492,9 @@ class RecipientController extends Controller
                 'recipient' => $recipient
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Gagal memperbarui registrasi: ' . $e->getMessage()], 400);
+            return response()->json([
+                'error' => 'Gagal memperbarui registrasi: ' . $e->getMessage()
+            ], 400);
         }
     }
 }

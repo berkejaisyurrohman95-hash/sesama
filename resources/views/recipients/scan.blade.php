@@ -1,345 +1,277 @@
-@extends('layouts.app')
+    @extends('layouts.app')
 
-@section('title', 'Penyaluran')
 
-@section('content')
+    @section('title', 'Penyaluran Bantuan')
+
+
+    @section('content')
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+
     <style>
-        .page-header {
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            color: white;
-        }
-
-        .scan-container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
-        }
-
-        .result-container {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            margin-bottom: 25px;
-        }
-
-        .form-control {
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-            padding: 12px 15px;
-            transition: all 0.3s ease;
-        }
-
-        .form-control:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-        }
-
-        .btn-custom {
-            border-radius: 8px;
-            padding: 12px 25px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .scan-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, #3b82f6, #1e40af);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-        }
-
-        .recipient-info {
-            background: #f8fafc;
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .info-item:last-child {
-            border-bottom: none;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #374151;
-        }
-
-        .info-value {
-            color: #6b7280;
-        }
+    /* --- Style mirip sebelumnya --- */
+    .page-header {
+        background: linear-gradient(135deg, #1e40af, #3b82f6);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        color: white;
+        text-align: center;
+    }
+    .scan-container, .result-container {
+        border-radius: 16px;
+        background: #fff;
+        padding: 30px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.08),
+                    0 12px 24px rgba(0,0,0,0.12),
+                    0 18px 32px rgba(0,0,0,0.06);
+    }
+    .scan-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #3b82f6, #1e40af);
+        border-radius: 50%;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        margin:0 auto 20px;
+    }
+    .form-control { border-radius:8px; border:1px solid #e5e7eb; padding:12px; }
+    .form-control:focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,0.1); }
+    .btn-custom { border-radius:10px; padding:12px 25px; font-weight:600; }
+    .btn-custom:hover { transform: translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,0.15);}
+    .hidden { display:none !important; }
     </style>
 
+
     <div class="page-header">
-        <h2 class="mb-3">Penyaluran Bantuan</h2>
-        <p class="mb-0">Scan QR Code untuk verifikasi dan penyaluran bantuan</p>
+        <h2>Penyaluran Bantuan</h2>
+        <p>Scan QR penerima untuk memproses penyaluran</p>
     </div>
+
 
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="scan-container">
-                <div class="text-center mb-4">
+
+
+                <div class="text-center mb-3">
                     <div class="scan-icon">
                         <i class="fas fa-qrcode fa-2x text-white"></i>
                     </div>
-                    <h4 class="mb-2">Scan QR Code</h4>
-                    <p class="text-muted">Masukkan atau scan kode QR untuk verifikasi</p>
+                    <h4>Pilih Mode Scan</h4>
+                    <button type="button" class="btn btn-primary btn-custom me-2" id="btnCamera">
+                        <i class="fas fa-camera me-2"></i>Scan via Kamera
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-custom" id="btnManual">
+                        <i class="fas fa-keyboard me-2"></i>Input Manual
+                    </button>
                 </div>
 
-                <form id="qrForm">
-                    <div class="mb-4">
-                        <label for="qr_input" class="form-label">Kode QR</label>
-                        <input type="text" class="form-control" id="qr_input"
-                            placeholder="Scan atau ketik kode QR di sini..." autofocus>
+
+                <!-- CAMERA -->
+                <div id="camera-area" class="mb-3 hidden">
+                    <div id="reader" style="width:100%; max-width:400px; margin:0 auto;"></div>
+                    <p class="text-center text-muted mt-2">Arahkan kamera ke QR Code</p>
+                    <div class="text-center mt-2">
+                        <button type="button" id="btnStopCamera" class="btn btn-sm btn-outline-danger">Stop Kamera</button>
+                    </div>
+                </div>
+
+
+                <!-- FORM MANUAL -->
+                <form id="verifyForm" class="mb-3">
+                    @csrf
+                    <div id="manual-input-wrapper">
+                        <label class="form-label">Kode QR</label>
+                        <input type="text" id="qr_code" name="qr_code" class="form-control" placeholder="Scan atau ketik QR" required>
                         <small class="form-text text-muted mt-2 d-block">
                             <i class="fas fa-info-circle me-1"></i>
                             Gunakan scanner atau ketik manual kode QR
                         </small>
                     </div>
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-primary btn-custom">
-                            <i class="fas fa-search me-2"></i>Verifikasi QR Code
-                        </button>
+                    <div class="text-center mt-2">
+                        <button class="btn btn-primary btn-custom"><i class="fas fa-search me-2"></i>Verifikasi</button>
                     </div>
                 </form>
-            </div>
-        </div>
-    </div>
 
-    {{-- result area centered on its own row; hidden until filled --}}
-    <div class="row justify-content-center mt-3">
-        <div class="col-lg-8">
-            <div class="result-container" id="resultCard" style="display: none;">
-                <h5 class="mb-4 text-center">
-                    <i class="fas fa-user-check me-2 text-success"></i>
-                    Hasil Verifikasi
-                </h5>
-                <div id="resultContent">
-                    <!-- Result will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="row mt-4" id="distributionSection" style="display: none;">
-        <div class="col-12">
-            <div class="result-container">
-                <h5 class="mb-4 text-center">
-                    <i class="fas fa-hand-holding-heart me-2 text-primary"></i>
-                    Konfirmasi Penyaluran
-                </h5>
-                <form id="distributionForm">
-                    <input type="hidden" id="recipient_id" name="recipient_id">
-                    <div class="text-center">
-                        <button type="submit" class="btn btn-success btn-custom me-3">
-                            <i class="fas fa-check me-2"></i>Tandai Sudah Disalurkan
-                        </button>
-                        <button type="button" class="btn btn-secondary btn-custom" onclick="resetForm()">
-                            <i class="fas fa-redo me-2"></i>Reset
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-@endsection
+                <!-- RESULT -->
+                <div id="result" class="hidden">
+                    <div class="result-container">
+                        <h5 class="text-center fw-bold mb-3">
+                            <i class="fas fa-user-check text-success me-2"></i>Data Penerima
+                        </h5>
+                        <input type="hidden" id="recipient_id">
 
-@push('scripts')
-    <script>
-        $(document).ready(function() {
-            let currentRecipient = null;
 
-            $('#qr_input').on('input', function() {
-                const value = $(this).val().trim();
-                if (value.length > 5) {
-                    setTimeout(() => {
-                        if ($('#qr_input').val().trim() === value) {
-                            $('#qrForm').submit();
-                        }
-                    }, 500);
-                }
-            });
-
-            $('#qr_input').on('keypress', function(e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                    $('#qrForm').submit();
-                }
-            });
-
-            $('#qrForm').on('submit', function(e) {
-                e.preventDefault();
-
-                const qrCode = $('#qr_input').val().trim();
-                if (!qrCode) {
-                    alert('Masukkan kode QR terlebih dahulu');
-                    return;
-                }
-
-                $('#resultContent').html(
-                    '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Memverifikasi...</div>'
-                    );
-                $('#resultCard').show();
-
-                $.ajax({
-                    url: '{{ route('recipients.verify-qr') }}',
-                    method: 'POST',
-                    data: {
-                        qr_code: qrCode,
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            currentRecipient = response.recipient;
-                            displayRecipientInfo(response.recipient);
-                            $('#distributionSection').show();
-                            $('#recipient_id').val(response.recipient.id);
-                        }
-                    },
-                    error: function(xhr) {
-                        const response = xhr.responseJSON;
-                        $('#resultCard').show();
-                        $('#resultContent').html(`
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        ${response.error || 'Terjadi kesalahan'}
-                    </div>
-                `);
-                        $('#distributionSection').hide();
-                        currentRecipient = null;
-                    }
-                });
-            });
-
-            $('#distributionForm').on('submit', function(e) {
-                e.preventDefault();
-
-                const recipientId = $('#recipient_id').val();
-                if (!recipientId) {
-                    alert('Data penerima tidak ditemukan');
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append('_token', '{{ csrf_token() }}');
-
-                const submitBtn = $('#distributionForm button[type="submit"]');
-                const originalText = submitBtn.html();
-                submitBtn.html('<i class="fas fa-spinner fa-spin me-2"></i>Memperbarui...').prop('disabled',
-                    true);
-
-                $.ajax({
-                    url: `/recipients/${recipientId}/distribute`,
-                    method: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    success: function(response) {
-
-                        if (response.success) {
-                            if (response.recipient) {
-                                currentRecipient = response.recipient;
-                                displayRecipientInfo(currentRecipient,
-                                true); // tampilkan PDF langsung
-                            }
-                            const successAlert = `
-                        <div class="alert alert-success alert-dismissible fade show">
-                            <i class="fas fa-check-circle me-2"></i>
-                            ${response.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <div class="mb-3">
+                            <label class="form-label">Nama Anak</label>
+                            <input class="form-control" id="child_name" readonly>
                         </div>
-                    `;
-                            $('#resultContent').prepend(successAlert);
-                        } else {
-                            alert(response.message || 'Terjadi kesalahan');
-                        }
-                    },
-                    error: function(xhr) {
-                        const response = xhr.responseJSON;
-                        alert(response?.message || 'Terjadi kesalahan saat memperbarui data');
-                    },
-                    complete: function() {
-                        submitBtn.html(originalText).prop('disabled', false);
-                    }
-                });
-            });
-        });
+                        <div class="mb-3">
+                            <label class="form-label">Nama Ayah</label>
+                            <input class="form-control" id="Ayah_name" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nama Ibu</label>
+                            <input class="form-control" id="Ibu_name" readonly>
+                        </div>
+                            <div class="mb-3">
+                            <label class="form-label">address</label>
+                            <input class="form-control" id="address" readonly>
+                        </div>
+                            <div class="mb-3">
+                            <label class="form-label">reference</label>
+                            <input class="form-control" id="reference" readonly>
+                        </div>
+                            <div class="mb-3">
+                            <label class="form-label">wilayah</label>
+                            <input class="form-control" id="wilayah" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">telephone</label>
+                            <input class="form-control" id="no_tlp" readonly>
+                                    </div>
+                        </div>
 
-        function displayRecipientInfo(recipient, showPdf = false) {
-            const statusBadge = recipient.is_distributed ?
-                '<span class="badge bg-success">Sudah Menerima</span>' :
-                '<span class="badge bg-warning">Belum Menerima</span>';
 
-            let pdfButton = '';
-            if (showPdf || recipient.is_distributed) {
-                pdfButton = ``;
-            }
+                        <hr class="my-3">
+                        <h5 class="text-center fw-bold mb-3"><i class="fas fa-hand-holding-heart text-primary me-2"></i>Form Penyaluran</h5>
 
-            $('#resultContent').html(`
-        <div class="alert alert-success mb-3">
-            <i class="fas fa-check-circle me-2"></i>
-            QR Code valid!
-        </div>
 
-        <div class="recipient-info">
-            <div class="info-item">
-                <span class="info-label">Nama:</span>
-                <span class="info-value"><strong>${recipient.child_name}</strong> ${statusBadge}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">QR Code:</span>
-                <span class="info-value">${recipient.qr_code}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Nama Ayah:</span>
-                <span class="info-value">${recipient.Ayah_name}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Nama Ibu:</span>
-                <span class="info-value">${recipient.Ibu_name}</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Sekolah:</span>
-                <span class="info-value">${recipient.school_name} (${recipient.school_level})</span>
-            </div>
-            <div class="info-item">
-                <span class="info-label">Kelas:</span>
-                <span class="info-value">${recipient.class}</span>
+                        <form id="distributeForm">
+                            @csrf
+                            <input type="hidden" name="recipient_id" id="recipient_id_2">
+                            <div class="mb-3">
+                                <label class="form-label">Tanggal Penyaluran</label>
+                            <input type="datetime-local" name="delivery_date" class="form-control" required>
+
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Keterangan</label>
+                                <textarea name="notes" class="form-control" rows="3"></textarea>
+                            </div>
+                            <div class="text-center">
+                                <button class="btn btn-success btn-custom"><i class="fas fa-check me-2"></i>Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+
             </div>
         </div>
-        ${pdfButton}
-    `);
+    </div>
 
-            $('#resultCard').show();
-        }
 
-        function resetForm() {
-            $('#qr_input').val('').focus();
-            $('#resultCard').hide();
-            $('#distributionSection').hide();
-            $('#distributionForm')[0].reset();
-        }
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+    <script>
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const btnCamera = document.getElementById('btnCamera');
+    const btnManual = document.getElementById('btnManual');
+    const cameraArea = document.getElementById('camera-area');
+    const manualWrapper = document.getElementById('manual-input-wrapper');
+    const readerId = 'reader';
+    const btnStopCamera = document.getElementById('btnStopCamera');
+    let scannerInstance = null;
+
+
+    // SweetAlert helper
+    function showPopup(type, message){
+        Swal.fire({icon:type, text:message, timer:2000, showConfirmButton:false});
+    }
+    // Ambil elemen input
+    const deliveryDateInput = document.querySelector('input[name="delivery_date"]');
+
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    let mm = now.getMonth() + 1;
+    let dd = now.getDate();
+    let hh = now.getHours();
+    let min = now.getMinutes();
+
+    // Tambahkan nol di depan jika < 10
+    if(mm < 10) mm = '0' + mm;
+    if(dd < 10) dd = '0' + dd;
+    if(hh < 10) hh = '0' + hh;
+    if(min < 10) min = '0' + min;
+
+    // Format untuk datetime-local: YYYY-MM-DDTHH:MM:SS
+    deliveryDateInput.value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+
+    function showCamera(){ cameraArea.classList.remove('hidden'); manualWrapper.classList.add('hidden'); }
+    function hideCamera(){ cameraArea.classList.add('hidden'); manualWrapper.classList.remove('hidden'); }
+
+
+    btnCamera.addEventListener('click', ()=>{ showCamera(); startCameraScanner(); });
+    btnManual.addEventListener('click', ()=>{ hideCamera(); stopScannerIfAny(); });
+    btnStopCamera.addEventListener('click', ()=>{ stopScannerIfAny(); hideCamera(); });
+
+
+    function startCameraScanner(){
+        if(scannerInstance) return;
+        scannerInstance = new Html5Qrcode(readerId);
+        scannerInstance.start({facingMode:"environment"}, {fps:10, qrbox:250}, qrMessage=>{
+            document.getElementById('qr_code').value = qrMessage;
+            stopScannerIfAny();
+            verifyQr(qrMessage);
+        }, err=>{}).catch(err=>{ showPopup('error','Gagal akses kamera, pastikan izin diberikan.'); });
+    }
+    function stopScannerIfAny(){ if(!scannerInstance) return; scannerInstance.stop().then(()=>{scannerInstance.clear(); scannerInstance=null;}).catch(()=>{scannerInstance=null;}); }
+
+
+    function verifyQr(qrCode){
+        const fd = new FormData();
+        fd.append('qr_code', qrCode);
+        fetch('{{ route('recipients.verify-qr') }}', { method:'POST', body:fd, headers:{'X-CSRF-TOKEN':csrfToken,'X-Requested-With':'XMLHttpRequest'}})
+        .then(r=>r.json()).then(data=>{
+            if(!data.success){ showPopup('error', data.error || 'QR tidak valid!'); return; }
+            showPopup('success','QR Berhasil Diverifikasi!');
+            document.getElementById('result').classList.remove('hidden');
+            const r = data.recipient;
+            document.getElementById('recipient_id').value = r.id;
+            document.getElementById('recipient_id_2').value = r.id;
+            document.getElementById('child_name').value = r.child_name;
+            document.getElementById('Ayah_name').value = r.Ayah_name;
+            document.getElementById('Ibu_name').value = r.Ibu_name;
+            document.getElementById('reference').value = r.reference;
+            document.getElementById('wilayah').value = r.wilayah;
+            document.getElementById('no_tlp').value = r.no_tlp;
+            document.getElementById('address').value = r.address;
+        }).catch(()=>showPopup('error','Gagal koneksi server!'));
+    }
+
+
+    // FORM MANUAL SUBMIT
+    document.getElementById('verifyForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        const code = document.getElementById('qr_code').value.trim();
+        if(!code){ showPopup('warning','Masukkan kode QR terlebih dahulu'); return; }
+        verifyQr(code);
+    });
+
+
+    // PENYALURAN SUBMIT
+    document.getElementById('distributeForm').addEventListener('submit', e=>{
+        e.preventDefault();
+        const id = document.getElementById('recipient_id').value;
+        fetch(`/recipients/${id}/distribute`, { method:'POST', body:new FormData(e.target), headers:{'X-CSRF-TOKEN':csrfToken,'X-Requested-With':'XMLHttpRequest'}})
+        .then(r=>r.json()).then(data=>{
+            if(data.success){ showPopup('success','Penyaluran Berhasil!'); setTimeout(()=>location.reload(),1500); }
+            else{ showPopup('warning',data.error ?? 'Terjadi kesalahan'); }
+        }).catch(()=>showPopup('error','Gagal koneksi server!'));
+    });
     </script>
-@endpush
+
+
+    @endsection
+
+
+
+
